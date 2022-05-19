@@ -23,6 +23,7 @@ contract wallet{
     mapping(uint => transactionInfo) transactionDetails;
     mapping(uint => walletInfo) walletDetails;
     mapping(uint => mapping(address => bool)) votersDetails;
+    mapping(uint256 => mapping(address => bool)) isPartner;
     
     modifier checkOwner(uint _id){
         require(walletDetails[_id].owner == msg.sender , "wallet : Not a User");
@@ -38,6 +39,7 @@ contract wallet{
     }
     function toAddPartners(address _partner, uint _id)public{
         walletDetails[_id].partners.push(_partner);
+        isPartner[_id][_partner] = true;
     }
 
     function addFunds(uint _id) public payable{
@@ -61,11 +63,26 @@ contract wallet{
         transID +=1;
     }
 
-    function voting(uint _transID , uint _id) public{
-        require(msg.sender == walletDetails[id].owner);
-        uint len = walletInfo[_id].partners.length;
-        for(uint i =0; i< len ; i+=1){
-        
+    function voting(uint256 _transID, uint256 _walletID, bool _vote) public {
+        require(
+            msg.sender == walletDetails[_walletID].owner ||
+                isPartner[_walletID][msg.sender],
+            "Not Authorized To Vote"
+        );
+        require(
+            msg.sender != transactionDetails[transID].reciever,
+            "You cannot Vote For this Transaction"
+        );
+        require(
+            !votersDetails[_transID][msg.sender],
+            "Already Voted For this Transaction"
+        );
+        votersDetails[_transID][msg.sender] = true;
+
+        if (_vote) {
+            transactionDetails[_transID].numOfVotesFor += 1;
+        } else {
+            transactionDetails[_transID].numOfVotesAgainst += 1;
         }
     }
 
